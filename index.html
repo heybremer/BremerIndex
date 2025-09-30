@@ -1,0 +1,1145 @@
+<!doctype html>
+<html lang="tr">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Markalar</title>
+  <style>
+    :root{
+      --gap:.9rem; --pad:1rem; --radius:14px;
+      --accent:#3B82F6;                 /* Değiştir: tek renk */
+      --accent-border: rgba(59,130,246,.35);
+      --accent-ring:   rgba(59,130,246,.25);
+      --accent-bg:     rgba(59,130,246,.06);
+    }
+    * { box-sizing: border-box; }
+    body { margin:0; font:16px/1.5 system-ui,-apple-system,Segoe UI,Roboto,Arial,sans-serif; background:#fff; color:#111827; }
+    .wrap { max-width:1100px; margin:2rem auto; padding:0 1rem; }
+    .sr-only { position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0; }
+    .toolbar { display:flex; gap:.8rem; align-items:center; justify-content:space-between; margin-bottom:1rem; }
+    .search { position:relative; width:100%; }
+    .search input { 
+      width:100%; 
+      border:1px solid var(--accent-border);
+      border-radius:var(--radius); 
+      padding:.75rem 2.2rem .75rem 1rem;
+      outline:none; 
+      box-shadow:0 1px 4px rgba(0,0,0,.06);
+      background: linear-gradient(0deg, var(--accent-bg), var(--accent-bg)), #fff;
+      font-size:1rem;
+      height:50px;
+    }
+    .search input:focus { border-color:#111827; box-shadow:0 0 0 .25rem var(--accent-ring); } /* why: belirgin klavye odağı */
+    .search svg { position:absolute; right:.6rem; top:50%; transform:translateY(-50%); width:18px; height:18px; opacity:.65; }
+    .grid { list-style:none; margin:0; padding:0; display:grid; gap:var(--gap); grid-template-columns: repeat(auto-fill, minmax(120px,1fr)); }
+    .card {
+      display:block; text-decoration:none; color:inherit;
+      border:1px solid var(--accent-border);
+      border-radius:var(--radius); padding:var(--pad);
+      background: linear-gradient(0deg, var(--accent-bg), var(--accent-bg)), #fff;
+      box-shadow:0 1px 4px rgba(0,0,0,.06);
+      transition: transform .06s ease, box-shadow .15s ease, border-color .15s ease;
+    }
+    .card:hover { transform: translateY(-1px); box-shadow:0 3px 14px rgba(0,0,0,.12); }
+    .card:focus-visible { outline:0; box-shadow:0 0 0 .35rem var(--accent-ring), 0 3px 14px rgba(0,0,0,.12); }
+    .card-body { display:grid; justify-items:center; align-content:center; gap:.6rem; min-height:150px; }
+    .logo-box { width:64px; height:64px; display:grid; place-items:center; border:1px solid var(--accent-border); border-radius:12px; background:#fff; }
+    .logo { width:100%; height:100%; padding:.6rem; object-fit:contain; }
+    .fallback { width:100%; height:100%; display:grid; place-items:center; font-weight:700; color:#6b7280; background:#f8fafc; border-radius:12px; }
+    .label { text-align:center; font-size:.95rem; font-weight:600; color:#111827; }
+    .empty { margin-top:1rem; font-size:.9rem; color:#6b7280; }
+    @media (prefers-color-scheme: dark) {
+      body { background:#0b0b0c; color:#e5e7eb; }
+      .search input { 
+        background: linear-gradient(0deg, color-mix(in srgb, var(--accent-bg), transparent 70%), transparent), #111214; 
+        color:#e5e7eb; 
+        border-color:var(--accent-border);
+        box-shadow:0 1px 4px rgba(0,0,0,.30);
+        height:50px;
+      }
+      .grid .card { background: linear-gradient(0deg, color-mix(in srgb, var(--accent-bg), transparent 70%), transparent), #111214; box-shadow:0 1px 4px rgba(0,0,0,.30); }
+      .logo-box { background:#0e0f11; }
+      .fallback { background:#0e0f11; color:#9ca3af; }
+      .label { color:#e5e7eb; }
+      .card:hover { box-shadow:0 6px 18px rgba(0,0,0,.45); }
+    }
+    @media (prefers-reduced-motion: reduce) { .card { transition:none; } }
+
+    /* Modern Filter Form Styles */
+    .filter-section { margin:2rem 0; }
+    .filter-form { background:linear-gradient(0deg, var(--accent-bg), var(--accent-bg)), #fff; border:1px solid var(--accent-border); border-radius:var(--radius); padding:1.5rem; box-shadow:0 1px 4px rgba(0,0,0,.06); }
+    .filter-row { display:grid; gap:1rem; grid-template-columns: 1fr 1fr 1fr auto; align-items:end; }
+    .filter-group { display:flex; flex-direction:column; gap:.5rem; }
+    .filter-label { display:flex; align-items:center; gap:.5rem; font-weight:600; color:#111827; font-size:.9rem; }
+    .filter-icon { width:18px; height:18px; color:var(--accent); }
+    .filter-select { 
+      width:100%; 
+      border:1px solid var(--accent-border); 
+      border-radius:12px; 
+      padding:.75rem 1rem; 
+      background:#fff; 
+      font-size:.95rem; 
+      outline:none; 
+      transition:border-color .15s ease, box-shadow .15s ease;
+    }
+    .filter-select:focus { border-color:#111827; box-shadow:0 0 0 .25rem var(--accent-ring); }
+    .filter-select:disabled { background:#f8fafc; color:#9ca3af; cursor:not-allowed; }
+    .filter-actions { display:flex; gap:.5rem; align-items:end; }
+    .btn-primary, .btn-secondary { 
+      display:flex; align-items:center; gap:.5rem; 
+      padding:.75rem 1.25rem; border-radius:12px; 
+      font-weight:600; font-size:.9rem; 
+      border:none; cursor:pointer; 
+      transition:all .15s ease; 
+      white-space:nowrap;
+    }
+    .btn-primary { background:var(--accent); color:#fff; }
+    .btn-primary:hover:not(:disabled) { background:#1e40af; transform:translateY(-1px); }
+    .btn-primary:disabled { background:#6b7280; cursor:not-allowed; transform:none; }
+    .btn-secondary { background:#f8fafc; color:#6b7280; border:1px solid #e5e7eb; }
+    .btn-secondary:hover { background:#f1f5f9; color:#374151; }
+    .btn-icon { width:16px; height:16px; }
+
+    @media (max-width: 768px) {
+      .filter-row { grid-template-columns: 1fr; gap:1rem; }
+      .filter-actions { justify-content:stretch; }
+      .btn-primary, .btn-secondary { flex:1; justify-content:center; }
+    }
+
+    @media (prefers-color-scheme: dark) {
+      .filter-form { background: linear-gradient(0deg, color-mix(in srgb, var(--accent-bg), transparent 70%), transparent), #111214; box-shadow:0 1px 4px rgba(0,0,0,.30); }
+      .filter-label { color:#e5e7eb; }
+      .filter-select { background:#0e0f11; color:#e5e7eb; border-color:var(--accent-border); }
+      .filter-select:disabled { background:#0e0f11; color:#6b7280; }
+      .filter-select:focus { border-color:#e5e7eb; }
+      .btn-secondary { background:#0e0f11; color:#6b7280; border-color:#2a2d33; }
+      .btn-secondary:hover { background:#1a1b1e; color:#e5e7eb; }
+    }
+
+    /* Hero Section Styles */
+    .hero-section { 
+      position:relative; 
+      height:600px; 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      overflow:hidden;
+      background-image:url('https://www.walser-cdn.com/media/0f/7e/7f/1731930843/Startseite_Hero_1_komprimiert.jpg');
+      background-size:cover;
+      background-position:center;
+      background-repeat:no-repeat;
+    }
+    .hero-video-background { 
+      position:absolute; 
+      top:0; left:0; right:0; bottom:0; 
+      z-index:1;
+    }
+    .hero-video-background video { 
+      width:100%; 
+      height:600px; 
+      object-fit:cover; 
+    }
+    .video-overlay { 
+      position:absolute; 
+      top:0; left:0; right:0; bottom:0; 
+      background:rgba(0,0,0,0.4); 
+      z-index:2; 
+    }
+    .hero-content { 
+      position:relative; 
+      z-index:3; 
+      text-align:center; 
+      max-width:100%; 
+      padding:2rem; 
+
+      margin:0 auto;
+    }
+    .hero-title { 
+      font-size:2.5rem; 
+      font-weight:900; 
+      color:#ffffff; 
+      margin-bottom:1rem; 
+      line-height:1.2;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+    }
+    .hero-subtitle { 
+      font-size:1.25rem; 
+      color:#ffffff; 
+      margin-bottom:2rem; 
+      font-weight:700;
+      text-shadow: 0 2px 4px rgba(0,0,0,0.35);
+    }
+    .hero-form { 
+      margin-bottom:2rem; 
+    }
+    .form-row { 
+      display:flex; 
+      flex-direction:column;
+      gap:1rem; 
+      align-items:stretch; 
+      justify-content:center; 
+      margin-bottom:1.5rem; 
+    }
+    .form-actions { 
+      display:flex; 
+      gap:0.5rem; 
+      align-items:end; 
+      justify-content:center;
+      width:100%;
+    }
+    .form-group { 
+      position:relative; 
+      min-width:auto; 
+      width:100%;
+    }
+    .hero-select { 
+      width:100%; 
+      padding:1rem 1.5rem; 
+      border:2px solid #e5e7eb; 
+      border-radius:12px; 
+      background:#ffffff; 
+      font-size:1rem; 
+      font-weight:500; 
+      color:#374151; 
+      appearance:none; 
+      background-image:url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='m6 8 4 4 4-4'/%3e%3c/svg%3e"); 
+      background-position:right 1rem center; 
+      background-repeat:no-repeat; 
+      background-size:1rem; 
+      padding-right:3rem; 
+      transition:all 0.2s ease;
+    }
+    .hero-select:focus { 
+      outline:none; 
+      border-color:#3b82f6; 
+      box-shadow:0 0 0 3px rgba(59,130,246,0.1); 
+    }
+    .hero-select:disabled { 
+      background:#ffffff; 
+      color:#6b7280; 
+      cursor:not-allowed; 
+    }
+    .form-label { 
+      position:absolute; 
+      top:-0.5rem; 
+      left:1rem; 
+      background:#fff; 
+      padding:0 0.5rem; 
+      font-size:0.875rem; 
+      font-weight:600; 
+      color:#6b7280; 
+    }
+    .hero-button { 
+      background:#dc2626; 
+      color:#fff; 
+      border:none; 
+      padding:1rem 2rem; 
+      border-radius:12px; 
+      font-size:1rem; 
+      font-weight:700; 
+      text-transform:uppercase; 
+      letter-spacing:0.5px; 
+      cursor:pointer; 
+      transition:all 0.2s ease; 
+      min-width:180px;
+      box-shadow:0 4px 12px rgba(220,38,38,0.3);
+    }
+    .hero-button:hover:not(:disabled) { 
+      background:#b91c1c; 
+      transform:translateY(-2px); 
+      box-shadow:0 8px 20px rgba(220,38,38,0.4); 
+    }
+    .hero-button:disabled { 
+      background:#6b7280; 
+      cursor:not-allowed; 
+      transform:none; 
+      box-shadow:0 2px 6px rgba(156,163,175,0.3); 
+    }
+    .hero-button-secondary { 
+      background:#6b7280; 
+      color:#fff; 
+      border:none; 
+      padding:1rem 2rem; 
+      border-radius:12px; 
+      font-size:1rem; 
+      font-weight:700; 
+      text-transform:uppercase; 
+      letter-spacing:0.5px; 
+      cursor:pointer; 
+      transition:all 0.2s ease; 
+      min-width:180px;
+      box-shadow:0 4px 12px rgba(107,114,128,0.3);
+    }
+    .hero-button-secondary:hover { 
+      background:#4b5563; 
+      transform:translateY(-2px); 
+      box-shadow:0 8px 20px rgba(107,114,128,0.4); 
+    }
+    .hero-divider { 
+      position:relative; 
+      text-align:center; 
+      margin:2rem 0; 
+    }
+    .divider-text { 
+      background:linear-gradient(135deg, rgba(255,255,255,0.9) 0%, rgba(255,255,255,0.7) 100%); 
+      padding:0.5rem 1.5rem; 
+      color:#374151; 
+      font-size:0.875rem; 
+      font-weight:600; 
+      border-radius:20px; 
+      border:1px solid rgba(255,255,255,0.3);
+      backdrop-filter: blur(10px);
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      display:inline-block;
+    }
+    .hero-divider::before { 
+      content:''; 
+      position:absolute; 
+      top:50%; 
+      left:50%; 
+      transform:translateX(-50%); 
+      width:60%; 
+      height:2px; 
+      background:linear-gradient(90deg, transparent 0%, rgba(255,255,255,0.6) 20%, rgba(255,255,255,0.8) 50%, rgba(255,255,255,0.6) 80%, transparent 100%); 
+      z-index:-1; 
+    }
+    .hero-link { 
+      display:flex; 
+      align-items:center; 
+      justify-content:center; 
+      gap:0.5rem; 
+      color:#ffffff; 
+      text-decoration:none; 
+      font-weight:600; 
+      font-size:0.875rem; 
+      text-transform:uppercase; 
+      letter-spacing:0.5px; 
+      transition:all 0.2s ease; 
+      text-shadow: 0 1px 2px rgba(0,0,0,0.3);
+    }
+    .hero-link:hover { 
+      color:#f3f4f6; 
+      transform:translateY(-1px);
+    }
+    .key-icon { 
+      width:16px; 
+      height:16px; 
+    }
+    .help-button { 
+      position:absolute; 
+      bottom:2rem; 
+      right:2rem; 
+      background:rgba(255,255,255,0.9); 
+      border:1px solid #e5e7eb; 
+      padding:0.75rem 1.5rem; 
+      border-radius:25px; 
+      font-size:0.875rem; 
+      font-weight:500; 
+      color:#374151; 
+      cursor:pointer; 
+      transition:all 0.2s ease; 
+      backdrop-filter: blur(10px);
+      z-index:3;
+    }
+    .help-button:hover { 
+      background:#fff; 
+      transform:translateY(-2px); 
+      box-shadow:0 5px 15px rgba(0,0,0,0.1); 
+    }
+
+    /* Brand Scrollable Styles */
+    .brand-scroll-container { 
+      margin:2rem 0; 
+      overflow-x:auto; 
+      overflow-y:hidden; 
+      position:relative; 
+      padding:0.5rem 0; 
+    }
+    .brand-scroll-container::-webkit-scrollbar { 
+      height:6px; 
+    }
+    .brand-scroll-container::-webkit-scrollbar-track { 
+      background:rgba(255,255,255,0.1); 
+      border-radius:3px; 
+    }
+    .brand-scroll-container::-webkit-scrollbar-thumb { 
+      background:rgba(255,255,255,0.3); 
+      border-radius:3px; 
+    }
+    .brand-scroll-container::-webkit-scrollbar-thumb:hover { 
+      background:rgba(255,255,255,0.5); 
+    }
+    .brand-scroll { 
+      display:flex; 
+      gap:1.5rem; 
+      align-items:center; 
+      padding:0 1rem; 
+      min-width:max-content; 
+    }
+    .brand-item { 
+      display:flex; 
+      flex-direction:column; 
+      align-items:center; 
+      gap:0.5rem; 
+      padding:1rem; 
+      background:#ffffff; 
+      border-radius:12px; 
+      min-width:80px; 
+      flex-shrink:0; 
+      transition:all 0.3s ease; 
+      cursor:pointer; 
+      border:1px solid #e5e7eb;
+    }
+    .brand-item:hover { 
+      background:#ffffff; 
+      transform:translateY(-5px); 
+      box-shadow:0 10px 25px rgba(0,0,0,0.15); 
+    }
+    .brand-item img { 
+      width:40px; 
+      height:40px; 
+      object-fit:contain; 
+    }
+    .brand-item span { 
+      font-size:0.75rem; 
+      font-weight:600; 
+      color:#374151; 
+      text-align:center; 
+    }
+
+    @media (max-width: 768px) {
+      .hero-section { height:500px; }
+      .hero-video-background video { height:500px; }
+      .hero-title { font-size:2rem; }
+      .hero-subtitle { font-size:1rem; }
+      .form-row { flex-direction:column; align-items:stretch; }
+      .form-group { min-width:auto; }
+      .hero-button { min-width:auto; }
+      .hero-content { margin:1rem; padding:1.5rem; max-width:calc(100% - 2rem); }
+      .help-button { bottom:1rem; right:1rem; }
+    }
+  </style>
+</head>
+<body>
+  <!-- Hero Section with Background Image -->
+  <section class="hero-section">
+    
+    <div class="hero-content">
+      <div class="hero-text">
+        <h1 class="hero-title">Nur das Beste für Ihr Auto</h1>
+        <p class="hero-subtitle">Passende Produkte für Ihr Fahrzeug anzeigen</p>
+      </div>
+      
+      <div class="hero-form">
+        <div class="form-row">
+          <div class="form-group">
+            <select class="hero-select" id="heroProductType">
+              <option value="">Bitte Produkttyp wählen...</option>
+              <optgroup label="Zubehör">
+                <option value="armlehnenbezuege" data-url="https://bremer-sitzbezuege.de/Armlehnenbezuege_1">Armlehnenbezüge</option>
+                <option value="auto-gardinen" data-url="https://bremer-sitzbezuege.de/Auto-Gardinen_1">Auto Gardinen</option>
+                <option value="dachreling" data-url="https://bremer-sitzbezuege.de/Dachreling">Dachreling</option>
+                <option value="dachreling-sets" data-url="https://bremer-sitzbezuege.de/Dachreling-Grundtraeger-Sets">Dachreling & Grundträger Sets</option>
+                <option value="einstiegsleiste" data-url="https://bremer-sitzbezuege.de/Einstiegsleiste">Einstiegsleiste</option>
+              </optgroup>
+              <optgroup label="Sitzbezüge & Sets">
+                <option value="fahrer-beifahrer-set" data-url="https://bremer-sitzbezuege.de/Fahrer-Beifahrer-Set-Schonbezuege">Fahrer & Beifahrer Set Schonbezüge</option>
+                <option value="fahrer-doppelsitzbank-set" data-url="https://bremer-sitzbezuege.de/Fahrer-und-Doppelsitzbank-Set-12-Schonbezuege">Fahrer und Doppelsitzbank Set (1+2) Schonbezüge</option>
+                <option value="fahrerhausbett" data-url="https://bremer-sitzbezuege.de/Fahrerhausbett">Fahrerhausbett</option>
+                <option value="frontscheiben-abdeckung" data-url="https://bremer-sitzbezuege.de/Frontscheiben-Aussenabdeckung_1">Frontscheiben Außenabdeckung</option>
+                <option value="fussmatten" data-url="https://bremer-sitzbezuege.de/Fussmatten_1">Fußmatten</option>
+                <option value="grundtraeger" data-url="https://bremer-sitzbezuege.de/Grundtraeger_1">Grundträger</option>
+                <option value="haubenbra" data-url="https://bremer-sitzbezuege.de/Haubenbra_1">Haubenbra</option>
+                <option value="haubenhutzen" data-url="https://bremer-sitzbezuege.de/Haubenhutzen">Haubenhutzen</option>
+                <option value="heizgeraete" data-url="https://bremer-sitzbezuege.de/Heizgeraete_1">Heizgeräte</option>
+                <option value="lenkradbezug" data-url="https://bremer-sitzbezuege.de/Lenkradbezug_1">Lenkradbezug</option>
+                <option value="matratze-camperbett" data-url="https://bremer-sitzbezuege.de/Matratze-Klappmatratze-Camperbett">Matratze Klappmatratze Camperbett</option>
+                <option value="moskitonetz" data-url="https://bremer-sitzbezuege.de/Moskitonetz_1">Moskitonetz</option>
+                <option value="multiflexboard" data-url="https://bremer-sitzbezuege.de/Multiflexboard">Multiflexboard</option>
+                <option value="multiflexboard-konsolen" data-url="https://bremer-sitzbezuege.de/Multiflexboard-Konsolen">Multiflexboard Konsolen</option>
+                <option value="multiflexboard-matratzen-sets" data-url="https://bremer-sitzbezuege.de/Multiflexboard-Matratzen-Sets_1">Multiflexboard-Matratzen-Sets</option>
+                <option value="rueckenlehne-schaumstoff" data-url="https://bremer-sitzbezuege.de/Rueckenlehne-Schaumstoff">Rückenlehne Schaumstoff</option>
+                <option value="schlafschoen-matratze" data-url="https://bremer-sitzbezuege.de/Schlafschoen-Matratze">Schlafschön Matratze</option>
+                <option value="schonbezuege-sets" data-url="https://bremer-sitzbezuege.de/Schonbezuege-Komplette-Sets">Schonbezüge Komplette Sets</option>
+                <option value="sitzpolster" data-url="https://bremer-sitzbezuege.de/Sitzpolster_1">Sitzpolster</option>
+                <option value="sonstiges" data-url="https://bremer-sitzbezuege.de/Sonstiges_1">Sonstiges</option>
+                <option value="spoiler" data-url="https://bremer-sitzbezuege.de/Spoiler_1">Spoiler</option>
+                <option value="topcase" data-url="https://bremer-sitzbezuege.de/Topcase_1">Topcase</option>
+                <option value="windabweiser" data-url="https://bremer-sitzbezuege.de/Windabweiser">Windabweiser</option>
+                <option value="wohnmobil-schonbezuege" data-url="https://bremer-sitzbezuege.de/Wohnmobil-Schonbezuege">Wohnmobil Schonbezüge</option>
+              </optgroup>
+            </select>
+            <label class="form-label">Produkttyp</label>
+          </div>
+          
+          <div class="form-group">
+            <select class="hero-select" id="heroVehicleBrand" disabled>
+              <option value="">Bitte erst "Produkttyp" wählen!</option>
+            </select>
+            <label class="form-label">Fahrzeug-Marke</label>
+          </div>
+          
+          <div class="form-group">
+            <select class="hero-select" id="heroVehicleModel" disabled>
+              <option value="">Bitte erst "Fahrzeug-Marke" wählen!</option>
+            </select>
+            <label class="form-label">Fahrzeug-Modell</label>
+          </div>
+          
+          <div class="form-actions">
+            <button class="hero-button" id="heroShowResults" disabled>
+              Passende Artikel anzeigen
+            </button>
+            <button class="hero-button-secondary" id="heroClearSelection">
+              Auswahl löschen
+            </button>
+          </div>
+        </div>
+        
+        <!-- Brand Scrollable Container removed -->
+        
+        <div class="hero-divider">
+          <span class="divider-text">oder</span>
+        </div>
+        
+        <div class="hero-link">
+          <svg class="key-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 2l-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0l3 3L22 7l-3-3m-3.5 3.5L19 4"/>
+          </svg>
+          <span>FAHRZEUGAUSWAHL NACH SCHLÜSSELNUMMER</span>
+        </div>
+      </div>
+    </div>
+    
+    <button class="help-button">
+      Benötigen Sie Hilfe?
+    </button>
+  </section>
+
+  <main class="wrap">
+    <header class="toolbar">
+      <h1 class="sr-only">Markalara göre ürünler</h1>
+      <div class="search">
+        <label for="q" class="sr-only">Marka ara</label>
+        <input id="q" placeholder="Marka ara..." autocomplete="off" />
+        <svg viewBox="0 0 24 24" fill="none" aria-hidden="true"><path stroke="currentColor" stroke-width="2" stroke-linecap="round" d="m21 21-4.35-4.35M10.5 18a7.5 7.5 0 1 1 0-15 7.5 7.5 0 0 1 0 15Z"/></svg>
+      </div>
+    </header>
+
+    <!-- Modern Product Filter Form -->
+    <section class="filter-section">
+      <div class="filter-form">
+        <div class="filter-row">
+          <div class="filter-group">
+            <label for="productType" class="filter-label">
+              <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M9 1v6l3-3 3 3V1"/>
+              </svg>
+              Produkttyp
+            </label>
+            <select id="productType" class="filter-select">
+              <option value="">Bitte Produkttyp wählen...</option>
+              <optgroup label="Zubehör">
+                <option value="armlehnenbezuege" data-url="https://bremer-sitzbezuege.de/Armlehnenbezuege_1">Armlehnenbezüge</option>
+                <option value="auto-gardinen" data-url="https://bremer-sitzbezuege.de/Auto-Gardinen_1">Auto Gardinen</option>
+                <option value="dachreling" data-url="https://bremer-sitzbezuege.de/Dachreling">Dachreling</option>
+                <option value="dachreling-sets" data-url="https://bremer-sitzbezuege.de/Dachreling-Grundtraeger-Sets">Dachreling & Grundträger Sets</option>
+                <option value="einstiegsleiste" data-url="https://bremer-sitzbezuege.de/Einstiegsleiste">Einstiegsleiste</option>
+              </optgroup>
+              <optgroup label="Sitzbezüge & Sets">
+                <option value="fahrer-beifahrer-set" data-url="https://bremer-sitzbezuege.de/Fahrer-Beifahrer-Set-Schonbezuege">Fahrer & Beifahrer Set Schonbezüge</option>
+                <option value="fahrer-doppelsitzbank-set" data-url="https://bremer-sitzbezuege.de/Fahrer-und-Doppelsitzbank-Set-12-Schonbezuege">Fahrer und Doppelsitzbank Set (1+2) Schonbezüge</option>
+                <option value="fahrerhausbett" data-url="https://bremer-sitzbezuege.de/Fahrerhausbett">Fahrerhausbett</option>
+                <option value="frontscheiben-abdeckung" data-url="https://bremer-sitzbezuege.de/Frontscheiben-Aussenabdeckung_1">Frontscheiben Außenabdeckung</option>
+                <option value="fussmatten" data-url="https://bremer-sitzbezuege.de/Fussmatten_1">Fußmatten</option>
+                <option value="grundtraeger" data-url="https://bremer-sitzbezuege.de/Grundtraeger_1">Grundträger</option>
+                <option value="haubenbra" data-url="https://bremer-sitzbezuege.de/Haubenbra_1">Haubenbra</option>
+                <option value="haubenhutzen" data-url="https://bremer-sitzbezuege.de/Haubenhutzen">Haubenhutzen</option>
+                <option value="heizgeraete" data-url="https://bremer-sitzbezuege.de/Heizgeraete_1">Heizgeräte</option>
+                <option value="lenkradbezug" data-url="https://bremer-sitzbezuege.de/Lenkradbezug_1">Lenkradbezug</option>
+                <option value="matratze-camperbett" data-url="https://bremer-sitzbezuege.de/Matratze-Klappmatratze-Camperbett">Matratze Klappmatratze Camperbett</option>
+                <option value="moskitonetz" data-url="https://bremer-sitzbezuege.de/Moskitonetz_1">Moskitonetz</option>
+                <option value="multiflexboard" data-url="https://bremer-sitzbezuege.de/Multiflexboard">Multiflexboard</option>
+                <option value="multiflexboard-konsolen" data-url="https://bremer-sitzbezuege.de/Multiflexboard-Konsolen">Multiflexboard Konsolen</option>
+                <option value="multiflexboard-matratzen-sets" data-url="https://bremer-sitzbezuege.de/Multiflexboard-Matratzen-Sets_1">Multiflexboard-Matratzen-Sets</option>
+                <option value="rueckenlehne-schaumstoff" data-url="https://bremer-sitzbezuege.de/Rueckenlehne-Schaumstoff">Rückenlehne Schaumstoff</option>
+                <option value="schlafschoen-matratze" data-url="https://bremer-sitzbezuege.de/Schlafschoen-Matratze">Schlafschön Matratze</option>
+                <option value="schonbezuege-sets" data-url="https://bremer-sitzbezuege.de/Schonbezuege-Komplette-Sets">Schonbezüge Komplette Sets</option>
+                <option value="sitzpolster" data-url="https://bremer-sitzbezuege.de/Sitzpolster_1">Sitzpolster</option>
+                <option value="sonstiges" data-url="https://bremer-sitzbezuege.de/Sonstiges_1">Sonstiges</option>
+                <option value="spoiler" data-url="https://bremer-sitzbezuege.de/Spoiler_1">Spoiler</option>
+                <option value="topcase" data-url="https://bremer-sitzbezuege.de/Topcase_1">Topcase</option>
+                <option value="windabweiser" data-url="https://bremer-sitzbezuege.de/Windabweiser">Windabweiser</option>
+                <option value="wohnmobil-schonbezuege" data-url="https://bremer-sitzbezuege.de/Wohnmobil-Schonbezuege">Wohnmobil Schonbezüge</option>
+              </optgroup>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="vehicleBrand" class="filter-label">
+              <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M5 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0zM19 17a2 2 0 1 0 4 0 2 2 0 0 0-4 0z"/>
+                <path d="M17 17H7l-2-5H2l-1-2h4l1 2h2l1-2h4l1 2h2l-1 2h-2z"/>
+                <path d="M7 9V4h10v5"/>
+              </svg>
+              Fahrzeug-Marke
+            </label>
+            <select id="vehicleBrand" class="filter-select" disabled>
+              <option value="">Bitte erst "Produkttyp" wählen!</option>
+            </select>
+          </div>
+
+          <div class="filter-group">
+            <label for="vehicleModel" class="filter-label">
+              <svg class="filter-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M14.7 6.3a1 1 0 0 0 0 1.4l1.6 1.6a1 1 0 0 0 1.4 0l3.77-3.77a6 6 0 0 1-7.94 7.94l-6.91 6.91a2.12 2.12 0 0 1-3-3l6.91-6.91a6 6 0 0 1 7.94-7.94l-3.76 3.76z"/>
+              </svg>
+              Fahrzeug-Modell
+            </label>
+            <select id="vehicleModel" class="filter-select" disabled>
+              <option value="">Bitte erst "Fahrzeug-Marke" wählen!</option>
+            </select>
+          </div>
+
+          <div class="filter-actions">
+            <button id="showResults" class="btn-primary" disabled>
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
+              Passende Artikel anzeigen
+            </button>
+            <button id="clearSelection" class="btn-secondary">
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <polyline points="3,6 5,6 21,6"/>
+                <path d="m19,6v14a2,2 0 0,1 -2,2H7a2,2 0 0,1 -2,-2V6m3,0V4a2,2 0 0,1 2,-2h4a2,2 0 0,1 2,2v2"/>
+                <line x1="10" y1="11" x2="10" y2="17"/>
+                <line x1="14" y1="11" x2="14" y2="17"/>
+              </svg>
+              Auswahl löschen
+            </button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <nav aria-label="Markalar">
+      <ul id="brandGrid" class="grid"></ul>
+      <p id="emptyState" class="empty" hidden>Sonuç bulunamadı.</p>
+    </nav>
+
+    <noscript>Tarayıcınızda JavaScript kapalı. Liste yüklenemedi.</noscript>
+  </main>
+
+  <script>
+    /* Tek renk ayarı */
+    const ACCENT = "#000000"; // değiştirilebilir
+
+    const BASE_URL = "https://bremer-sitzbezuege.de/";
+    const BRANDS = [
+      { label: "Alfa Romeo", path: "alfa-romeo", slug: "alfaromeo" },
+      { label: "Audi", path: "audi", slug: "audi" },
+      { label: "BMW", path: "bmw", slug: "bmw" },
+      { label: "Chevrolet", path: "chevrolet", slug: "chevrolet" },
+      { label: "Citroen", path: "citroen", slug: "citroen" },
+      { label: "Dacia", path: "dacia", slug: "dacia" },
+      { label: "Dodge", path: "dodge", slug: "dodge" },
+      { label: "Fiat", path: "fiat", slug: "fiat" },
+      { label: "Ford", path: "ford", slug: "ford" },
+      { label: "Honda", path: "honda", slug: "honda" },
+      { label: "Hyundai", path: "hyundai", slug: "hyundai" },
+      { label: "Infiniti", path: "infiniti", slug: "infiniti" },
+      { label: "Isuzu", path: "isuzu", slug: "isuzu" },
+      { label: "Iveco", path: "iveco", slug: "iveco" },
+      { label: "Jaguar", path: "jaguar", slug: "jaguar" },
+      { label: "Jeep", path: "jeep", slug: "jeep" },
+      { label: "Kia", path: "kia", slug: "kia" },
+      { label: "Lada", path: "lada", slug: "lada" },
+      { label: "Lancia", path: "lancia", slug: "lancia" },
+      { label: "Land Rover", path: "land%20rover", slug: "landrover" },
+      { label: "Lexus", path: "lexus", slug: "lexus" },
+      { label: "Maserati", path: "maserati", slug: "maserati" },
+      { label: "Mazda", path: "mazda", slug: "mazda" },
+      { label: "Mercedes", path: "mercedes", slug: "mercedes" },
+      { label: "Mini", path: "mini", slug: "mini" },
+      { label: "Mitsubishi", path: "mitsubishi", slug: "mitsubishi" },
+      { label: "Nissan", path: "nissan", slug: "nissan" },
+      { label: "Opel", path: "opel", slug: "opel" },
+      { label: "Peugeot", path: "peugeot", slug: "peugeot" },
+      { label: "Polestar", path: "polestar", slug: "polestar" },
+      { label: "Porsche", path: "porsche", slug: "porsche" },
+      { label: "Renault", path: "renault", slug: "renault" },
+      { label: "SAAB", path: "saab", slug: "saab" },
+      { label: "Seat", path: "seat", slug: "seat" },
+      { label: "Skoda", path: "skoda", slug: "skoda" },
+      { label: "Smart", path: "smart", slug: "smart" },
+      { label: "Ssangyong", path: "ssangyong", slug: "ssangyong" },
+      { label: "Subaru", path: "subaru", slug: "subaru" },
+      { label: "Suzuki", path: "suzuki", slug: "suzuki" },
+      { label: "Tesla", path: "tesla", slug: "tesla" },
+      { label: "Toyota", path: "toyota", slug: "toyota" },
+      { label: "Volvo", path: "volvo", slug: "volvo" },
+      { label: "VW", path: "vw", slug: "volkswagen" }
+    ];
+
+    const $grid = document.getElementById("brandGrid");
+    const $empty = document.getElementById("emptyState");
+    const $q = document.getElementById("q");
+
+    const normalize = (s) => s.toLocaleLowerCase("tr").normalize("NFKD").replace(/\p{Diacritic}/gu,"");
+
+    const hexToRgb = (hex) => {
+      const m = /^#?([a-f\d]{2})([a-f\d]{2})([a-f\d]{2})$/i.exec(hex);
+      if (!m) return null;
+      return { r: parseInt(m[1],16), g: parseInt(m[2],16), b: parseInt(m[3],16) };
+    };
+    const rgba = (hex, a) => {
+      const rgb = hexToRgb(hex);
+      return rgb ? `rgba(${rgb.r}, ${rgb.g}, ${rgb.b}, ${a})` : `rgba(0,0,0,${a})`;
+    };
+
+    // why: Tek noktadan tema kontrolü ve kontrastı sabitlemek
+    (function applyAccent(){
+      const root = document.documentElement;
+      root.style.setProperty("--accent", ACCENT);
+      root.style.setProperty("--accent-border", rgba(ACCENT,.35));
+      root.style.setProperty("--accent-ring", rgba(ACCENT,.25));
+      root.style.setProperty("--accent-bg", rgba(ACCENT,.06));
+    })();
+
+    const logoUrl = (slug, hex) =>
+      hex ? `https://cdn.simpleicons.org/${encodeURIComponent(slug)}/${hex.replace("#","")}`
+          : `https://cdn.simpleicons.org/${encodeURIComponent(slug)}`;
+    
+    const logoUrlColorful = (slug) =>
+      `https://cdn.simpleicons.org/${encodeURIComponent(slug)}`;
+
+    const initials = (label) => {
+      const parts = label.trim().split(/\s+/).filter(Boolean);
+      return parts.length === 1 ? parts[0].slice(0,2).toUpperCase()
+                                : (parts[0][0] + parts[parts.length-1][0]).toUpperCase();
+    };
+
+    const createFallback = (label) => {
+      const div = document.createElement("div");
+      div.className = "fallback";
+      div.textContent = initials(label);
+      div.setAttribute("aria-hidden","true");
+      return div;
+    };
+
+    function render(list) {
+      $grid.replaceChildren();
+      const frag = document.createDocumentFragment();
+
+      for (const b of list) {
+        const li = document.createElement("li");
+        const a = document.createElement("a");
+        a.className = "card";
+        a.href = new URL(b.path, BASE_URL).toString();
+        a.setAttribute("aria-label", b.label);
+
+        const body = document.createElement("div");
+        body.className = "card-body";
+
+        const box = document.createElement("div");
+        box.className = "logo-box";
+
+        const img = document.createElement("img");
+        img.className = "logo";
+        img.src = logoUrl(b.slug, ACCENT);        // why: logo tek renge boyanır
+        img.loading = "lazy";
+        img.decoding = "async";
+        img.alt = "";
+        img.setAttribute("aria-hidden","true");
+        img.onerror = () => { box.replaceChildren(createFallback(b.label)); };
+        
+        // Hover efektleri
+        a.addEventListener("mouseenter", () => {
+          img.src = logoUrlColorful(b.slug);
+        });
+        a.addEventListener("mouseleave", () => {
+          img.src = logoUrl(b.slug, ACCENT);
+        });
+
+        const label = document.createElement("div");
+        label.className = "label";
+        label.textContent = b.label;
+
+        box.appendChild(img);
+        body.appendChild(box);
+        body.appendChild(label);
+        a.appendChild(body);
+        li.appendChild(a);
+        frag.appendChild(li);
+      }
+      $grid.appendChild(frag);
+      $empty.hidden = list.length !== 0;
+    }
+
+    function applyFilter() {
+      const q = normalize($q.value || "");
+      if (!q) { render(BRANDS); return; }
+      const filtered = BRANDS.filter(b => normalize(b.label).includes(q));
+      render(filtered);
+    }
+
+    // Filter Form Functionality
+    const productTypeSelect = document.getElementById('productType');
+    const vehicleBrandSelect = document.getElementById('vehicleBrand');
+    const vehicleModelSelect = document.getElementById('vehicleModel');
+    const showResultsBtn = document.getElementById('showResults');
+    const clearSelectionBtn = document.getElementById('clearSelection');
+
+    // Vehicle brands data
+    const VEHICLE_BRANDS = [
+      { label: "Aiways", value: "aiways" },
+      { label: "Alfa Romeo", value: "alfa-romeo" },
+      { label: "Audi", value: "audi" },
+      { label: "BAIC", value: "baic" },
+      { label: "BMW", value: "bmw" },
+      { label: "BYD", value: "byd" },
+      { label: "Cadillac", value: "cadillac" },
+      { label: "Chevrolet", value: "chevrolet" },
+      { label: "Citroen", value: "citroen" },
+      { label: "Cupra", value: "cupra" },
+      { label: "Dacia", value: "dacia" },
+      { label: "DFSK", value: "dfsk" },
+      { label: "Dodge", value: "dodge" },
+      { label: "DS Automobiles", value: "ds-automobiles" },
+      { label: "Elaris", value: "elaris" },
+      { label: "Fiat", value: "fiat" },
+      { label: "Fisker", value: "fisker" },
+      { label: "Ford", value: "ford" },
+      { label: "GWM", value: "gwm" },
+      { label: "Honda", value: "honda" },
+      { label: "Hyundai", value: "hyundai" },
+      { label: "Ineos", value: "ineos" },
+      { label: "Infiniti", value: "infiniti" },
+      { label: "Isuzu", value: "isuzu" },
+      { label: "Iveco", value: "iveco" },
+      { label: "JAC", value: "jac" },
+      { label: "Jaguar", value: "jaguar" },
+      { label: "Jeep", value: "jeep" },
+      { label: "Kia", value: "kia" },
+      { label: "Lada", value: "lada" },
+      { label: "Lancia", value: "lancia" },
+      { label: "Land Rover", value: "land-rover" },
+      { label: "LeapMotor", value: "leapmotor" },
+      { label: "Lexus", value: "lexus" },
+      { label: "Lynk & Co", value: "lynk-co" },
+      { label: "Maserati", value: "maserati" },
+      { label: "Maxus", value: "maxus" },
+      { label: "Mazda", value: "mazda" },
+      { label: "Mercedes", value: "mercedes" },
+      { label: "MG", value: "mg" },
+      { label: "Mini", value: "mini" },
+      { label: "Mitsubishi", value: "mitsubishi" },
+      { label: "Nio", value: "nio" },
+      { label: "Nissan", value: "nissan" },
+      { label: "Opel", value: "opel" },
+      { label: "ORA", value: "ora" },
+      { label: "Peugeot", value: "peugeot" },
+      { label: "Polestar", value: "polestar" },
+      { label: "Porsche", value: "porsche" },
+      { label: "Renault", value: "renault" },
+      { label: "SAAB", value: "saab" },
+      { label: "Seat", value: "seat" },
+      { label: "Skoda", value: "skoda" },
+      { label: "Smart", value: "smart" },
+      { label: "Ssangyong", value: "ssangyong" },
+      { label: "Subaru", value: "subaru" },
+      { label: "Suzuki", value: "suzuki" },
+      { label: "Tesla", value: "tesla" },
+      { label: "Toyota", value: "toyota" },
+      { label: "Volvo", value: "volvo" },
+      { label: "VW", value: "vw" },
+      { label: "Xpeng", value: "xpeng" }
+    ];
+
+    // Sample vehicle models for Audi (simplified)
+    const AUDI_MODELS = [
+      { label: "A1 8X", value: "a1-8x" },
+      { label: "A1 GB", value: "a1-gb" },
+      { label: "A2 8Z", value: "a2-8z" },
+      { label: "A3 8L", value: "a3-8l" },
+      { label: "A3 8P", value: "a3-8p" },
+      { label: "A3 8V", value: "a3-8v" },
+      { label: "A3 8Y", value: "a3-8y" },
+      { label: "A4 B5", value: "a4-b5" },
+      { label: "A4 B6", value: "a4-b6" },
+      { label: "A4 B7", value: "a4-b7" },
+      { label: "A4 B8", value: "a4-b8" },
+      { label: "A4 B9", value: "a4-b9" },
+      { label: "A5 8T", value: "a5-8t" },
+      { label: "A5 F5", value: "a5-f5" },
+      { label: "A6 C4", value: "a6-c4" },
+      { label: "A6 C5", value: "a6-c5" },
+      { label: "A6 C6", value: "a6-c6" },
+      { label: "A6 C7", value: "a6-c7" },
+      { label: "A6 C8", value: "a6-c8" },
+      { label: "A7 C7", value: "a7-c7" },
+      { label: "A7 C8", value: "a7-c8" },
+      { label: "A8 D3", value: "a8-d3" },
+      { label: "A8 D4", value: "a8-d4" },
+      { label: "A8 D5", value: "a8-d5" },
+      { label: "E-Tron GE", value: "e-tron-ge" },
+      { label: "Q2 GA", value: "q2-ga" },
+      { label: "Q3 8U", value: "q3-8u" },
+      { label: "Q3 F3", value: "q3-f3" },
+      { label: "Q3 Sportback", value: "q3-sportback" },
+      { label: "Q4", value: "q4" },
+      { label: "Q5 8R", value: "q5-8r" },
+      { label: "Q5 FY", value: "q5-fy" },
+      { label: "Q5 Sportback", value: "q5-sportback" },
+      { label: "Q7 4L", value: "q7-4l" },
+      { label: "Q7 4M", value: "q7-4m" },
+      { label: "Q8", value: "q8" },
+      { label: "SQ2", value: "sq2" },
+      { label: "SQ5 8R", value: "sq5-8r" },
+      { label: "SQ5 FY", value: "sq5-fy" }
+    ];
+
+    function populateSelect(select, options, placeholder) {
+      select.innerHTML = '';
+      const defaultOption = document.createElement('option');
+      defaultOption.value = '';
+      defaultOption.textContent = placeholder;
+      select.appendChild(defaultOption);
+      
+      options.forEach(option => {
+        const optionElement = document.createElement('option');
+        optionElement.value = option.value;
+        optionElement.textContent = option.label;
+        select.appendChild(optionElement);
+      });
+    }
+
+    function updateFormState() {
+      const productType = productTypeSelect.value;
+      const vehicleBrand = vehicleBrandSelect.value;
+      const vehicleModel = vehicleModelSelect.value;
+      
+      // Enable/disable selects based on previous selections
+      if (productType) {
+        vehicleBrandSelect.disabled = false;
+        populateSelect(vehicleBrandSelect, VEHICLE_BRANDS, 'Bitte Fahrzeug-Marke wählen...');
+      } else {
+        vehicleBrandSelect.disabled = true;
+        vehicleBrandSelect.innerHTML = '<option value="">Bitte erst "Produkttyp" wählen!</option>';
+        vehicleModelSelect.disabled = true;
+        vehicleModelSelect.innerHTML = '<option value="">Bitte erst "Fahrzeug-Marke" wählen!</option>';
+      }
+      
+      if (vehicleBrand) {
+        vehicleModelSelect.disabled = false;
+        // For demo, we'll use Audi models for any brand
+        populateSelect(vehicleModelSelect, AUDI_MODELS, 'Bitte Fahrzeug-Modell wählen...');
+      } else {
+        vehicleModelSelect.disabled = true;
+        vehicleModelSelect.innerHTML = '<option value="">Bitte erst "Fahrzeug-Marke" wählen!</option>';
+      }
+      
+      // Enable/disable show results button
+      showResultsBtn.disabled = !(productType && vehicleBrand && vehicleModel);
+    }
+
+    function clearForm() {
+      productTypeSelect.value = '';
+      vehicleBrandSelect.value = '';
+      vehicleModelSelect.value = '';
+      updateFormState();
+    }
+
+    function showResults() {
+      const productType = productTypeSelect.value;
+      const vehicleBrand = vehicleBrandSelect.value;
+      const vehicleModel = vehicleModelSelect.value;
+      
+      if (productType && vehicleBrand && vehicleModel) {
+        // Get the URL from the selected product type
+        const selectedProduct = productTypeSelect.querySelector(`option[value="${productType}"]`);
+        const baseUrl = selectedProduct ? selectedProduct.dataset.url : '';
+        
+        // Construct the final URL
+        const finalUrl = `${baseUrl}__${vehicleBrand}__${vehicleModel}`;
+        
+        // Open the results page
+        window.open(finalUrl, '_blank');
+      }
+    }
+
+    // Event listeners
+    productTypeSelect.addEventListener('change', updateFormState);
+    vehicleBrandSelect.addEventListener('change', updateFormState);
+    vehicleModelSelect.addEventListener('change', updateFormState);
+    showResultsBtn.addEventListener('click', showResults);
+    clearSelectionBtn.addEventListener('click', clearForm);
+
+    // Hero Section Functionality
+    const heroProductTypeSelect = document.getElementById('heroProductType');
+    const heroVehicleBrandSelect = document.getElementById('heroVehicleBrand');
+    const heroVehicleModelSelect = document.getElementById('heroVehicleModel');
+    const heroShowResultsBtn = document.getElementById('heroShowResults');
+    const heroClearSelectionBtn = document.getElementById('heroClearSelection');
+
+    // Sample series data for different brands
+    const SERIES_DATA = {
+      'audi': [
+        { label: 'A1', value: 'a1' },
+        { label: 'A3', value: 'a3' },
+        { label: 'A4', value: 'a4' },
+        { label: 'A5', value: 'a5' },
+        { label: 'A6', value: 'a6' },
+        { label: 'A7', value: 'a7' },
+        { label: 'A8', value: 'a8' },
+        { label: 'Q2', value: 'q2' },
+        { label: 'Q3', value: 'q3' },
+        { label: 'Q4', value: 'q4' },
+        { label: 'Q5', value: 'q5' },
+        { label: 'Q7', value: 'q7' },
+        { label: 'Q8', value: 'q8' }
+      ],
+      'bmw': [
+        { label: '1 Series', value: '1-series' },
+        { label: '2 Series', value: '2-series' },
+        { label: '3 Series', value: '3-series' },
+        { label: '4 Series', value: '4-series' },
+        { label: '5 Series', value: '5-series' },
+        { label: '6 Series', value: '6-series' },
+        { label: '7 Series', value: '7-series' },
+        { label: 'X1', value: 'x1' },
+        { label: 'X2', value: 'x2' },
+        { label: 'X3', value: 'x3' },
+        { label: 'X4', value: 'x4' },
+        { label: 'X5', value: 'x5' },
+        { label: 'X6', value: 'x6' },
+        { label: 'X7', value: 'x7' }
+      ],
+      'mercedes': [
+        { label: 'A-Class', value: 'a-class' },
+        { label: 'B-Class', value: 'b-class' },
+        { label: 'C-Class', value: 'c-class' },
+        { label: 'E-Class', value: 'e-class' },
+        { label: 'S-Class', value: 's-class' },
+        { label: 'GLA', value: 'gla' },
+        { label: 'GLB', value: 'glb' },
+        { label: 'GLC', value: 'glc' },
+        { label: 'GLE', value: 'gle' },
+        { label: 'GLS', value: 'gls' },
+        { label: 'G-Class', value: 'g-class' }
+      ]
+    };
+
+    // Sample model data for different series
+    const MODEL_DATA = {
+      'a4': [
+        { label: 'A4 B5 (1994-2001)', value: 'a4-b5' },
+        { label: 'A4 B6 (2000-2005)', value: 'a4-b6' },
+        { label: 'A4 B7 (2004-2008)', value: 'a4-b7' },
+        { label: 'A4 B8 (2007-2016)', value: 'a4-b8' },
+        { label: 'A4 B9 (2015-2023)', value: 'a4-b9' }
+      ],
+      'a3': [
+        { label: 'A3 8L (1996-2003)', value: 'a3-8l' },
+        { label: 'A3 8P (2003-2013)', value: 'a3-8p' },
+        { label: 'A3 8V (2012-2020)', value: 'a3-8v' },
+        { label: 'A3 8Y (2020-)', value: 'a3-8y' }
+      ],
+      '3-series': [
+        { label: '3 Series E36 (1990-2000)', value: '3-series-e36' },
+        { label: '3 Series E46 (1998-2006)', value: '3-series-e46' },
+        { label: '3 Series E90 (2005-2012)', value: '3-series-e90' },
+        { label: '3 Series F30 (2012-2019)', value: '3-series-f30' },
+        { label: '3 Series G20 (2019-)', value: '3-series-g20' }
+      ]
+    };
+
+    function updateHeroFormState() {
+      const productType = heroProductTypeSelect.value;
+      const vehicleBrand = heroVehicleBrandSelect.value;
+      const vehicleModel = heroVehicleModelSelect.value;
+      
+      // Enable/disable vehicle brand when product type changes
+      if (productType) {
+        heroVehicleBrandSelect.disabled = false;
+        populateSelect(heroVehicleBrandSelect, VEHICLE_BRANDS, 'Bitte Fahrzeug-Marke wählen...');
+        heroVehicleModelSelect.disabled = true;
+        heroVehicleModelSelect.innerHTML = '<option value="">Bitte erst "Fahrzeug-Marke" wählen!</option>';
+      } else {
+        heroVehicleBrandSelect.disabled = true;
+        heroVehicleBrandSelect.innerHTML = '<option value="">Bitte erst "Produkttyp" wählen!</option>';
+        heroVehicleModelSelect.disabled = true;
+        heroVehicleModelSelect.innerHTML = '<option value="">Bitte erst "Fahrzeug-Marke" wählen!</option>';
+      }
+      
+      // Enable/disable vehicle model when brand changes
+      if (vehicleBrand) {
+        heroVehicleModelSelect.disabled = false;
+        populateSelect(heroVehicleModelSelect, AUDI_MODELS, 'Bitte Fahrzeug-Modell wählen...');
+      } else {
+        heroVehicleModelSelect.disabled = true;
+        heroVehicleModelSelect.innerHTML = '<option value="">Bitte erst "Fahrzeug-Marke" wählen!</option>';
+      }
+      
+      // Enable/disable show results button
+      heroShowResultsBtn.disabled = !(productType && vehicleBrand && vehicleModel);
+    }
+
+    function showHeroResults() {
+      const productType = heroProductTypeSelect.value;
+      const vehicleBrand = heroVehicleBrandSelect.value;
+      const vehicleModel = heroVehicleModelSelect.value;
+      
+      if (productType && vehicleBrand && vehicleModel) {
+        // Get the URL from the selected product type
+        const selectedProduct = heroProductTypeSelect.querySelector(`option[value="${productType}"]`);
+        const baseUrl = selectedProduct ? selectedProduct.dataset.url : '';
+        
+        // Construct the final URL
+        const finalUrl = `${baseUrl}__${vehicleBrand}__${vehicleModel}`;
+        
+        // Open the results page
+        window.open(finalUrl, '_blank');
+      }
+    }
+
+    function clearHeroForm() {
+      heroProductTypeSelect.value = '';
+      heroVehicleBrandSelect.value = '';
+      heroVehicleModelSelect.value = '';
+      updateHeroFormState();
+    }
+
+    // Brand scrollable functionality
+    const brandItems = document.querySelectorAll('.brand-item');
+    brandItems.forEach(item => {
+      item.addEventListener('click', () => {
+        const brandName = item.querySelector('span').textContent.toLowerCase();
+        const brandValue = brandName.replace(/\s+/g, '-');
+        
+        // Update hero vehicle brand select
+        heroVehicleBrandSelect.value = brandValue;
+        updateHeroFormState();
+        
+        // Scroll to form
+        document.querySelector('.hero-form').scrollIntoView({ 
+          behavior: 'smooth', 
+          block: 'center' 
+        });
+      });
+    });
+
+    // Hero section event listeners
+    heroProductTypeSelect.addEventListener('change', updateHeroFormState);
+    heroVehicleBrandSelect.addEventListener('change', updateHeroFormState);
+    heroVehicleModelSelect.addEventListener('change', updateHeroFormState);
+    heroShowResultsBtn.addEventListener('click', showHeroResults);
+    heroClearSelectionBtn.addEventListener('click', clearHeroForm);
+
+    // init
+    render(BRANDS);
+    $q.addEventListener("input", applyFilter, { passive: true });
+  </script>
+</body>
+</html>

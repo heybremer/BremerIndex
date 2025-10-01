@@ -136,7 +136,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('action', 'getManufacturers');
         formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
         
-        fetch('{$PluginUrl}ajax.php', {
+        fetch('{$pluginUrl}frontend/ajax.php', {
             method: 'POST',
             body: formData,
             headers: {
@@ -163,7 +163,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('manufacturer_id', manufacturerId);
         formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
         
-        fetch('{$PluginUrl}ajax.php', {
+        fetch('{$pluginUrl}frontend/ajax.php', {
             method: 'POST',
             body: formData,
             headers: {
@@ -192,7 +192,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('model_name', modelName);
         formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
         
-        fetch('{$PluginUrl}ajax.php', {
+        fetch('{$pluginUrl}frontend/ajax.php', {
             method: 'POST',
             body: formData,
             headers: {
@@ -220,7 +220,7 @@ document.addEventListener('DOMContentLoaded', function() {
         formData.append('action', 'getCategories');
         formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
         
-        fetch('{$PluginUrl}ajax.php', {
+        fetch('{$pluginUrl}frontend/ajax.php', {
             method: 'POST',
             body: formData,
             headers: {

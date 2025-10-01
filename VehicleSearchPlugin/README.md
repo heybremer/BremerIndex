@@ -27,10 +27,11 @@ Advanced vehicle search plugin with manufacturer, model, and type selection for 
 
 ## Installation
 
-1. Upload the plugin folder to `/plugins/VehicleSearchPlugin/`
-2. Go to JTL Shop Admin → Extensions → Plugin Manager
-3. Find "Vehicle Search Plugin" and click "Install"
-4. Configure settings in Admin → Extensions → Vehicle Search Settings
+1. Zip the contents of this directory so that the archive contains the folder `VehicleSearchPlugin` with the plugin files inside.
+2. Upload the archive through **JTL-Shop 5.4 Plugin Manager** (`Administration → Plugins → Plug-inverwaltung → Hochladen`).
+3. Install the plugin and activate it from the manager.
+4. Configure settings in **Administration → Plugins → Vehicle Search Settings**.
+5. Clear the shop cache so that the new templates and assets are available.
 
 ## Usage
 
@@ -40,11 +41,12 @@ Advanced vehicle search plugin with manufacturer, model, and type selection for 
 {include file='plugins/VehicleSearchPlugin/frontend/templates/vehicle_search.tpl'}
 ```
 
-### In On-Page Composer
+### In On-Page Composer (JTL Shop 5.4)
 
-1. Add a "Rich Text" portlet
-2. Switch to "Source" mode
-3. Add the include statement above
+1. Add a **"Freitext"** portlet to the desired container.
+2. Switch the portlet to **HTML/Quellcode** mode.
+3. Paste the include statement above so that the template is rendered inside the portlet.
+4. Save the page and publish the draft.
 
 ## Configuration
 
@@ -96,7 +98,7 @@ Copy the template file to your theme directory and modify as needed.
 
 ## Requirements
 
-- JTL Shop 5.0.0 or higher
+- JTL Shop 5.4.0 or higher
 - PHP 7.4 or higher
 - MySQL 5.7 or higher
 
@@ -111,6 +113,11 @@ For support and questions, contact:
 MIT License - see LICENSE file for details.
 
 ## Changelog
+
+### Version 1.1.0
+- Declare official compatibility with JTL Shop 5.4.0.
+- Fix AJAX endpoint URLs when the plugin is installed as a packaged plugin.
+- Update asset versioning and documentation to reflect the new release.
 
 ### Version 1.0.0
 - Initial release

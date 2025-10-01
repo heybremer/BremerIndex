@@ -4,7 +4,7 @@
  * 
  * @package VehicleSearchPlugin
  * @author Bremer Sitzbezüge
- * @version 1.0.0
+ * @version 1.1.0
  */
 
 class VehicleSearchPlugin extends Plugin
@@ -17,7 +17,7 @@ class VehicleSearchPlugin extends Plugin
     /**
      * Plugin version
      */
-    const VERSION = '1.0.0';
+    const VERSION = '1.1.0';
     
     /**
      * Configuration cache

@@ -50,6 +50,11 @@ try {
             echo json_encode(['success' => true, 'types' => $types]);
             break;
             
+        case 'getManufacturers':
+            $manufacturers = getManufacturers();
+            echo json_encode(['success' => true, 'manufacturers' => $manufacturers]);
+            break;
+            
         default:
             throw new Exception('Invalid action');
     }
@@ -59,25 +64,31 @@ try {
 }
 
 /**
- * Get vehicle models by manufacturer ID
+ * Get vehicle models by manufacturer ID (JTL Shop Merkmal system)
  */
 function getVehicleModelsByManufacturer($manufacturerId) {
     global $DB;
     
-    $sql = "SELECT DISTINCT cModell 
-            FROM tfahrzeugmodell 
-            WHERE kHersteller = :manufacturerId 
-            AND cModell IS NOT NULL 
-            AND cModell != '' 
-            ORDER BY cModell ASC";
+    // JTL Shop Merkmal sistemi kullanarak model listesi
+    $sql = "SELECT DISTINCT mw.kMerkmalwert, mw.cWert
+            FROM tmerkmalwert mw
+            INNER JOIN tartikelmerkmal am ON mw.kMerkmalwert = am.kMerkmalwert
+            INNER JOIN tartikel a ON am.kArtikel = a.kArtikel
+            INNER JOIN thersteller h ON a.kHersteller = h.kHersteller
+            WHERE h.kHersteller = :manufacturerId 
+            AND mw.kMerkmal = 250  -- Fahrzeug-Modell Merkmal ID
+            AND mw.cWert IS NOT NULL 
+            AND mw.cWert != '' 
+            AND a.nAktiv = 1
+            ORDER BY mw.cWert ASC";
     
     $result = $DB->executeQuery($sql, ['manufacturerId' => $manufacturerId]);
     $models = [];
     
     while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         $models[] = [
-            'value' => $row['cModell'],
-            'text' => $row['cModell']
+            'value' => $row['cWert'],
+            'text' => $row['cWert']
         ];
     }
     
@@ -85,29 +96,62 @@ function getVehicleModelsByManufacturer($manufacturerId) {
 }
 
 /**
- * Get vehicle types by model name
+ * Get vehicle types by model name (JTL Shop Merkmal system)
  */
 function getVehicleTypesByModel($modelName) {
     global $DB;
     
-    $sql = "SELECT DISTINCT cFahrzeugtyp 
-            FROM tfahrzeugmodell 
-            WHERE cModell = :modelName 
-            AND cFahrzeugtyp IS NOT NULL 
-            AND cFahrzeugtyp != '' 
-            ORDER BY cFahrzeugtyp ASC";
+    // JTL Shop Merkmal sistemi kullanarak tip listesi
+    $sql = "SELECT DISTINCT mw.kMerkmalwert, mw.cWert
+            FROM tmerkmalwert mw
+            INNER JOIN tartikelmerkmal am ON mw.kMerkmalwert = am.kMerkmalwert
+            INNER JOIN tartikel a ON am.kArtikel = a.kArtikel
+            WHERE mw.kMerkmal = 252  -- Fahrzeug-Typ Merkmal ID
+            AND mw.cWert LIKE :modelName
+            AND mw.cWert IS NOT NULL 
+            AND mw.cWert != '' 
+            AND a.nAktiv = 1
+            ORDER BY mw.cWert ASC";
     
-    $result = $DB->executeQuery($sql, ['modelName' => $modelName]);
+    $result = $DB->executeQuery($sql, ['modelName' => '%' . $modelName . '%']);
     $types = [];
     
     while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
         $types[] = [
-            'value' => $row['cFahrzeugtyp'],
-            'text' => $row['cFahrzeugtyp']
+            'value' => $row['cWert'],
+            'text' => $row['cWert']
         ];
     }
     
     return $types;
+}
+
+/**
+ * Get manufacturers (JTL Shop Hersteller)
+ */
+function getManufacturers() {
+    global $DB;
+    
+    $sql = "SELECT h.kHersteller, h.cName, h.cBildpfad
+            FROM thersteller h
+            INNER JOIN tartikel a ON h.kHersteller = a.kHersteller
+            WHERE h.nAktiv = 1 
+            AND a.nAktiv = 1
+            GROUP BY h.kHersteller, h.cName, h.cBildpfad
+            ORDER BY h.cName ASC";
+    
+    $result = $DB->executeQuery($sql);
+    $manufacturers = [];
+    
+    while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+        $manufacturers[] = [
+            'value' => $row['kHersteller'],
+            'text' => $row['cName'],
+            'image' => $row['cBildpfad']
+        ];
+    }
+    
+    return $manufacturers;
 }
 
 /**

@@ -12,11 +12,7 @@
         <div class="form-group">
             <select class="form-select" id="bannerVehicleBrand" name="cHersteller" required>
                 <option value="">Fahrzeug-Marke wählen...</option>
-                {foreach from=$oHersteller_arr item=oHersteller}
-                    <option value="{$oHersteller->kHersteller}" {if $oHersteller->kHersteller == $cHersteller}selected{/if}>
-                        {$oHersteller->cName}
-                    </option>
-                {/foreach}
+                {* AJAX ile yüklenecek - sayfa yüklendiğinde doldurulacak *}
             </select>
             <label class="form-label">Fahrzeug-Marke</label>
         </div>
@@ -72,6 +68,9 @@ document.addEventListener('DOMContentLoaded', function() {
     const bannerVehicleTypeSelect = document.getElementById('bannerVehicleType');
     const bannerSearchBtn = document.getElementById('bannerSearchBtn');
     
+    // Sayfa yüklendiğinde üreticileri yükle
+    loadManufacturers();
+    
     // Load vehicle models when manufacturer changes
     bannerVehicleBrandSelect.addEventListener('change', function() {
         const manufacturerId = this.value;
@@ -105,6 +104,37 @@ document.addEventListener('DOMContentLoaded', function() {
         const vehicleType = this.value;
         bannerSearchBtn.disabled = !(vehicleBrand && vehicleModel && vehicleType);
     });
+    
+    // AJAX function to load manufacturers
+    function loadManufacturers() {
+        const formData = new FormData();
+        formData.append('action', 'getManufacturers');
+        formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+        
+        fetch('{$ShopURL}/ajax.php', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.manufacturers) {
+                data.manufacturers.forEach(manufacturer => {
+                    const option = document.createElement('option');
+                    option.value = manufacturer.value;
+                    option.textContent = manufacturer.text;
+                    bannerVehicleBrandSelect.appendChild(option);
+                });
+            } else {
+                console.error('Error loading manufacturers:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('AJAX error:', error);
+        });
+    }
     
     // AJAX function to load vehicle models
     function loadVehicleModels(manufacturerId) {

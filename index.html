@@ -1322,47 +1322,62 @@
               </button>
             </div>
           </div>
-          <form class="search-form">
+          <form class="search-form" method="POST" action="{$ShopURL}/index.php" id="vehicleSearchForm">
+            <!-- JTL Shop CSRF Token -->
+            <input type="hidden" name="csrf_token" value="{$smarty.session.csrf_token}" />
+            <input type="hidden" name="a" value="{$smarty.const.LINKTYP_ARTIKELSUCHE}" />
+            <input type="hidden" name="s" value="{$smarty.session.sessionID}" />
+            
             <div class="form-group">
-              <select class="form-select" id="bannerVehicleBrand">
+              <select class="form-select" id="bannerVehicleBrand" name="cHersteller" required>
                 <option value="">Fahrzeug-Marke wählen...</option>
-                <option value="mercedes">Mercedes</option>
-                <option value="fiat">Fiat</option>
-                <option value="volkswagen">Volkswagen</option>
-                <option value="ford">Ford</option>
-                <option value="peugeot">Peugeot</option>
-                <option value="citroen">Citroën</option>
-                <option value="renault">Renault</option>
-                <option value="opel">Opel</option>
-                <option value="bmw">BMW</option>
-                <option value="audi">Audi</option>
-            </select>
+                {foreach from=$oHersteller_arr item=oHersteller}
+                  <option value="{$oHersteller->kHersteller}" {if $oHersteller->kHersteller == $cHersteller}selected{/if}>
+                    {$oHersteller->cName}
+                  </option>
+                {/foreach}
+              </select>
               <label class="form-label">Fahrzeug-Marke</label>
-          </div>
+            </div>
 
             <div class="form-group">
-              <select class="form-select" id="bannerVehicleModel" disabled>
+              <select class="form-select" id="bannerVehicleModel" name="cModell" disabled>
                 <option value="">Fahrzeug-Modell wählen...</option>
-            </select>
+                {if !empty($oModell_arr)}
+                  {foreach from=$oModell_arr item=oModell}
+                    <option value="{$oModell->cModell}" {if $oModell->cModell == $cModell}selected{/if}>
+                      {$oModell->cModell}
+                    </option>
+                  {/foreach}
+                {/if}
+              </select>
               <label class="form-label">Fahrzeug-Modell</label>
-          </div>
+            </div>
 
             <div class="form-group">
-              <select class="form-select" id="bannerVehicleType" disabled>
+              <select class="form-select" id="bannerVehicleType" name="cFahrzeugtyp" disabled>
                 <option value="">Fahrzeug-Typ wählen...</option>
-                <option value="limousine">Limousine</option>
-                <option value="kombi">Kombi</option>
-                <option value="suv">SUV</option>
-                <option value="coupe">Coupé</option>
-                <option value="cabrio">Cabrio</option>
-                <option value="van">Van</option>
-                <option value="pickup">Pickup</option>
-                <option value="sportwagen">Sportwagen</option>
-            </select>
+                {foreach from=$oFahrzeugtyp_arr item=oFahrzeugtyp}
+                  <option value="{$oFahrzeugtyp->cFahrzeugtyp}" {if $oFahrzeugtyp->cFahrzeugtyp == $cFahrzeugtyp}selected{/if}>
+                    {$oFahrzeugtyp->cFahrzeugtyp}
+                  </option>
+                {/foreach}
+              </select>
               <label class="form-label">Fahrzeug-Typ</label>
-          </div>
+            </div>
 
-            <button type="button" class="search-button" id="bannerSearchBtn" disabled>
+            <!-- Zusätzliche JTL Shop Parameter -->
+            <input type="hidden" name="cSuche" value="1" />
+            <input type="hidden" name="nSortierung" value="1" />
+            <input type="hidden" name="nSort" value="1" />
+            <input type="hidden" name="nSeite" value="1" />
+            <input type="hidden" name="nAnzahlProSeite" value="20" />
+
+            <button type="submit" class="search-button" id="bannerSearchBtn" disabled>
+              <svg class="btn-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="11" cy="11" r="8"/>
+                <path d="m21 21-4.35-4.35"/>
+              </svg>
               Suchen
             </button>
           </form>
@@ -2031,17 +2046,103 @@
       bannerSearchBtn.disabled = !(vehicleBrand && vehicleModel && vehicleType);
     }
 
+    // AJAX function to load vehicle models from JTL Shop
+    function loadVehicleModels(manufacturerId) {
+      if (!manufacturerId) return;
+      
+      const formData = new FormData();
+      formData.append('action', 'getVehicleModels');
+      formData.append('manufacturer_id', manufacturerId);
+      formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+      
+      fetch('{$ShopURL}/ajax.php', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.models) {
+          populateSelect(bannerVehicleModelSelect, data.models, 'Fahrzeug-Modell wählen...');
+          bannerVehicleModelSelect.disabled = false;
+        } else {
+          console.error('Error loading models:', data.error);
+          bannerVehicleModelSelect.innerHTML = '<option value="">Fehler beim Laden der Modelle</option>';
+        }
+      })
+      .catch(error => {
+        console.error('AJAX error:', error);
+        bannerVehicleModelSelect.innerHTML = '<option value="">Fehler beim Laden der Modelle</option>';
+      });
+    }
+    
+    // AJAX function to load vehicle types from JTL Shop
+    function loadVehicleTypes(modelName) {
+      if (!modelName) return;
+      
+      const formData = new FormData();
+      formData.append('action', 'getVehicleTypes');
+      formData.append('model_name', modelName);
+      formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+      
+      fetch('{$ShopURL}/ajax.php', {
+        method: 'POST',
+        body: formData,
+        headers: {
+          'X-Requested-With': 'XMLHttpRequest'
+        }
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.success && data.types) {
+          populateSelect(bannerVehicleTypeSelect, data.types, 'Fahrzeug-Typ wählen...');
+          bannerVehicleTypeSelect.disabled = false;
+        } else {
+          console.error('Error loading types:', data.error);
+          bannerVehicleTypeSelect.innerHTML = '<option value="">Fehler beim Laden der Typen</option>';
+        }
+      })
+      .catch(error => {
+        console.error('AJAX error:', error);
+        bannerVehicleTypeSelect.innerHTML = '<option value="">Fehler beim Laden der Typen</option>';
+      });
+    }
+
     function showBannerResults() {
       const vehicleBrand = bannerVehicleBrandSelect.value;
       const vehicleModel = bannerVehicleModelSelect.value;
       const vehicleType = bannerVehicleTypeSelect.value;
       
       if (vehicleBrand && vehicleModel && vehicleType) {
-        // Construct the final URL
-        const finalUrl = `https://example.com/search?brand=${vehicleBrand}&model=${vehicleModel}&type=${vehicleType}`;
-        
-        // Open the results page
-        window.open(finalUrl, '_blank');
+        // JTL Shop form submission
+        const form = document.getElementById('vehicleSearchForm');
+        if (form) {
+          // Set additional parameters
+          const csrfInput = form.querySelector('input[name="csrf_token"]');
+          const sessionInput = form.querySelector('input[name="s"]');
+          
+          // Validate CSRF token
+          if (!csrfInput || !csrfInput.value) {
+            console.error('CSRF token missing');
+            alert('Sicherheitsfehler: Bitte Seite neu laden und erneut versuchen.');
+            return;
+          }
+          
+          // Validate session
+          if (!sessionInput || !sessionInput.value) {
+            console.error('Session ID missing');
+            alert('Sitzung abgelaufen: Bitte Seite neu laden und erneut versuchen.');
+            return;
+          }
+          
+          // Submit form
+          form.submit();
+        } else {
+          console.error('Form not found');
+          alert('Formularfehler: Bitte Seite neu laden und erneut versuchen.');
+        }
       }
     }
 
@@ -2825,10 +2926,22 @@
     });
 
     // Banner event listeners
-    bannerVehicleBrandSelect.addEventListener('change', updateBannerFormState);
-    bannerVehicleModelSelect.addEventListener('change', updateBannerFormState);
+    bannerVehicleBrandSelect.addEventListener('change', function() {
+      updateBannerFormState();
+      loadVehicleModels(this.value);
+    });
+    bannerVehicleModelSelect.addEventListener('change', function() {
+      updateBannerFormState();
+      loadVehicleTypes(this.value);
+    });
     bannerVehicleTypeSelect.addEventListener('change', updateBannerFormState);
     bannerSearchBtn.addEventListener('click', showBannerResults);
+    
+    // Form submission handler
+    document.getElementById('vehicleSearchForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+      showBannerResults();
+    });
 
     // Global search functionality with live results
     document.addEventListener('DOMContentLoaded', function() {

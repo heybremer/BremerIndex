@@ -1,0 +1,62 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<plugin>
+    <name>VehicleSearchPlugin</name>
+    <description>Advanced vehicle search with manufacturer, model and type selection</description>
+    <author>Bremer Sitzbezüge</author>
+    <version>1.0.0</version>
+    <shopversion>5.0.0</shopversion>
+    <pluginid>VehicleSearchPlugin</pluginid>
+    <licence>MIT</licence>
+    <link>https://bremer-sitzbezuege.de</link>
+    <descriptionlang>
+        <de>Erweiterte Fahrzeugsuche mit Hersteller-, Modell- und Typauswahl</de>
+        <en>Advanced vehicle search with manufacturer, model and type selection</en>
+        <tr>Gelişmiş araç arama - üretici, model ve tip seçimi</tr>
+    </descriptionlang>
+    <install>
+        <sql>
+            <file>sql/install.sql</file>
+        </sql>
+        <file>
+            <source>frontend/templates/</source>
+            <target>templates/VehicleSearchPlugin/</target>
+        </file>
+        <file>
+            <source>frontend/css/</source>
+            <target>templates/VehicleSearchPlugin/css/</target>
+        </file>
+        <file>
+            <source>frontend/js/</source>
+            <target>templates/VehicleSearchPlugin/js/</target>
+        </file>
+    </install>
+    <uninstall>
+        <sql>
+            <file>sql/uninstall.sql</file>
+        </sql>
+        <file>
+            <source>templates/VehicleSearchPlugin/</source>
+            <target>templates/VehicleSearchPlugin/</target>
+            <delete>1</delete>
+        </file>
+    </uninstall>
+    <adminmenu>
+        <customlink>
+            <name>Vehicle Search Settings</name>
+            <filename>adminmenu/vehicle_search_settings.php</filename>
+            <description>Configure vehicle search settings</description>
+        </customlink>
+    </adminmenu>
+    <frontend>
+        <hook>
+            <id>1</id>
+            <name>HOOK_HEADER_HTML</name>
+            <filename>frontend/hooks/header.php</filename>
+        </hook>
+        <hook>
+            <id>2</id>
+            <name>HOOK_FOOTER_HTML</name>
+            <filename>frontend/hooks/footer.php</filename>
+        </hook>
+    </frontend>
+</plugin>

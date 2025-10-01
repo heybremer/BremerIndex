@@ -55,6 +55,11 @@ try {
             echo json_encode(['success' => true, 'manufacturers' => $manufacturers]);
             break;
             
+        case 'getCategories':
+            $categories = getCategories();
+            echo json_encode(['success' => true, 'categories' => $categories]);
+            break;
+            
         default:
             throw new Exception('Invalid action');
     }
@@ -152,6 +157,37 @@ function getManufacturers() {
     }
     
     return $manufacturers;
+}
+
+/**
+ * Get categories (JTL Shop Kategorien)
+ */
+function getCategories() {
+    global $DB;
+    
+    $sql = "SELECT k.kKategorie, k.cName, k.cBeschreibung, k.nSort, k.kOberKategorie
+            FROM tkategorie k
+            INNER JOIN tkategorieartikel ka ON k.kKategorie = ka.kKategorie
+            INNER JOIN tartikel a ON ka.kArtikel = a.kArtikel
+            WHERE k.nAktiv = 1 
+            AND a.nAktiv = 1
+            GROUP BY k.kKategorie, k.cName, k.cBeschreibung, k.nSort, k.kOberKategorie
+            ORDER BY k.nSort ASC, k.cName ASC";
+    
+    $result = $DB->executeQuery($sql);
+    $categories = [];
+    
+    while ($row = $result->fetch(PDO::FETCH_ASSOC)) {
+        $categories[] = [
+            'value' => $row['kKategorie'],
+            'text' => $row['cName'],
+            'description' => $row['cBeschreibung'],
+            'parent' => $row['kOberKategorie'],
+            'sort' => $row['nSort']
+        ];
+    }
+    
+    return $categories;
 }
 
 /**

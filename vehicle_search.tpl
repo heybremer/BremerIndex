@@ -43,6 +43,15 @@
             <label class="form-label">Fahrzeug-Typ</label>
         </div>
 
+        <!-- Seçim Türü -->
+        <div class="form-group">
+            <label class="form-label">Seçim Türü:</label>
+            <select class="form-select" id="cAuswahltyp" name="cAuswahltyp">
+                <option value="M" selected>Özellikler hakkında</option>
+                <option value="K">Kategori ağacı aracılığıyla</option>
+            </select>
+        </div>
+
         <!-- Zusätzliche JTL Shop Parameter -->
         <input type="hidden" name="cSuche" value="1" />
         <input type="hidden" name="nSortierung" value="1" />
@@ -105,6 +114,112 @@ document.addEventListener('DOMContentLoaded', function() {
         bannerSearchBtn.disabled = !(vehicleBrand && vehicleModel && vehicleType);
     });
     
+    // Seçim türü değiştiğinde form davranışını güncelle
+    const auswahltypSelect = document.getElementById('cAuswahltyp');
+    auswahltypSelect.addEventListener('change', function() {
+        const auswahltyp = this.value;
+        console.log('Seçim türü değişti:', auswahltyp);
+        
+        // Seçim türüne göre form davranışını ayarla
+        if (auswahltyp === 'K') {
+            // Kategori ağacı modu - farklı davranış
+            console.log('Kategori ağacı modu aktif');
+            switchToCategoryMode();
+        } else {
+            // Özellikler modu - mevcut davranış
+            console.log('Özellikler modu aktif');
+            switchToFeatureMode();
+        }
+    });
+    
+    // Mod değiştirme fonksiyonları
+    function switchToCategoryMode() {
+        // Kategori ağacı modu - üretici ve model seçimlerini gizle
+        bannerVehicleBrandSelect.style.display = 'none';
+        bannerVehicleModelSelect.style.display = 'none';
+        bannerVehicleTypeSelect.style.display = 'none';
+        
+        // Kategori seçimi için yeni alan oluştur
+        createCategorySelector();
+    }
+    
+    function switchToFeatureMode() {
+        // Özellikler modu - normal davranış
+        bannerVehicleBrandSelect.style.display = 'block';
+        bannerVehicleModelSelect.style.display = 'block';
+        bannerVehicleTypeSelect.style.display = 'block';
+        
+        // Kategori seçicisini kaldır
+        const categorySelector = document.getElementById('categorySelector');
+        if (categorySelector) {
+            categorySelector.remove();
+        }
+    }
+    
+    function createCategorySelector() {
+        // Mevcut kategori seçicisini kaldır
+        const existingSelector = document.getElementById('categorySelector');
+        if (existingSelector) {
+            existingSelector.remove();
+        }
+        
+        // Yeni kategori seçici oluştur
+        const categoryDiv = document.createElement('div');
+        categoryDiv.id = 'categorySelector';
+        categoryDiv.className = 'form-group';
+        categoryDiv.innerHTML = `
+            <label class="form-label">Kategori Seçin:</label>
+            <select class="form-select" id="categorySelect" name="kKategorie">
+                <option value="">Kategori yükleniyor...</option>
+            </select>
+        `;
+        
+        // Form'a ekle
+        const form = document.getElementById('vehicleSearchForm');
+        const submitButton = document.getElementById('bannerSearchBtn');
+        form.insertBefore(categoryDiv, submitButton);
+        
+        // Kategorileri yükle
+        loadCategories();
+    }
+    
+    function loadCategories() {
+        const formData = new FormData();
+        formData.append('action', 'getCategories');
+        formData.append('csrf_token', document.querySelector('input[name="csrf_token"]').value);
+        
+        fetch('{$ShopURL}/ajax.php', {
+            method: 'POST',
+            body: formData,
+            headers: {
+                'X-Requested-With': 'XMLHttpRequest'
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success && data.categories) {
+                const categorySelect = document.getElementById('categorySelect');
+                categorySelect.innerHTML = '<option value="">Kategori seçin...</option>';
+                data.categories.forEach(category => {
+                    const option = document.createElement('option');
+                    option.value = category.value;
+                    option.textContent = category.text;
+                    categorySelect.appendChild(option);
+                });
+                
+                // Kategori seçimi değiştiğinde
+                categorySelect.addEventListener('change', function() {
+                    bannerSearchBtn.disabled = !this.value;
+                });
+            } else {
+                console.error('Error loading categories:', data.error);
+            }
+        })
+        .catch(error => {
+            console.error('AJAX error:', error);
+        });
+    }
+
     // AJAX function to load manufacturers
     function loadManufacturers() {
         const formData = new FormData();
